@@ -89,15 +89,20 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Watch 5 transaksi terakhir aktif.
-  Stream<List<Transaction>> watchRecent({int limit = 5}) {
-    return (select(transactions)
-          ..where((t) => t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm.desc(t.tanggal)])
-          ..limit(limit))
-        .watch();
+  /// Watch transaksi aktif, terbaru dulu.
+  Stream<List<Transaction>> watchRecent({int? limit}) {
+    final query = select(transactions)
+      ..where((t) => t.deletedAt.isNull())
+      ..orderBy([(t) => OrderingTerm.desc(t.tanggal)]);
+    if (limit != null) query.limit(limit);
+    return query.watch();
   }
 
   /// Buat UUID baru.
   static String newId() => _uuid.v4();
+
+  /// Insert transaksi manual sederhana (tanpa items).
+  Future<void> insertManual(TransactionsCompanion entry) async {
+    await into(transactions).insert(entry);
+  }
 }

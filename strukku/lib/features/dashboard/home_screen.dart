@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
           const Text('5 Transaksi Terakhir'),
           const SizedBox(height: 8),
           if ((transactions?.length ?? 0) > 0)
-            ...transactions!.map((t) => _buildTransactionItem(t)),
+            ...transactions!.map((t) => _buildTransactionItem(context, ref, t)),
           if ((transactions?.length ?? 0) == 0)
             const Center(
               child: Padding(
@@ -51,13 +51,13 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildSummaryCard(List<dynamic> transactions) {
     final totalToday = transactions
         .where((t) => t.tanggal.day == DateTime.now().day)
-        .fold(0, (sum, t) => sum + t.total);
+        .fold<int>(0, (sum, t) => sum + (t.total as int));
 
     final totalMonth = transactions
         .where((t) =>
             t.tanggal.year == DateTime.now().year &&
             t.tanggal.month == DateTime.now().month)
-        .fold(0, (sum, t) => sum + t.total);
+        .fold<int>(0, (sum, t) => sum + (t.total as int));
 
     return Card(
       child: Padding(
@@ -73,27 +73,27 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionItem(dynamic t) {
+  Widget _buildTransactionItem(BuildContext context, WidgetRef ref, dynamic t) {
     final isIncome = t.tipe == 'masuk';
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(t.namaToko ?? '-'),
-        subtitle: Text('${formatTanggal(t.tanggal)} • ${t.catatan ?? '-'}'),
+        subtitle: Text(t.catatan ?? '-'),
         trailing: Text(
-          '${isIncome ? '+' : '-'}${formatRupiah(t.total)}',
+          '${isIncome ? '+' : '-'}${formatRupiah(t.total as int)}',
           style: TextStyle(
             color: isIncome ? Colors.green : Colors.red,
             fontWeight: FontWeight.bold,
           ),
         ),
         onTap: () => context.push('/transaksi/ubah/${t.id}'),
-        onLongPress: () => _showDeleteDialog(context, t.id),
+        onLongPress: () => _showDeleteDialog(context, ref, t.id),
       ),
     );
   }
 
-  void _showDeleteDialog(BuildContext context, String id) {
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, String id) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -106,10 +106,12 @@ class HomeScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () {
-              context.read(transactionControllerProvider)
-                  .softDelete(id)
-                  .then((_) => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Transaksi dihapus'))));
+              final messenger = ScaffoldMessenger.of(context);
+              ref.read(transactionControllerProvider).softDelete(id).then(
+                    (_) => messenger.showSnackBar(
+                      const SnackBar(content: Text('Transaksi dihapus')),
+                    ),
+                  );
               Navigator.pop(context);
             },
             child: const Text('Hapus'),

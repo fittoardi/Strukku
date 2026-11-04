@@ -1,10 +1,10 @@
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
+import '../../core/db/transaction_dao.dart';
 import '../../core/utils/format.dart';
 import 'transaction_provider.dart';
-
-final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
 
 class TransactionFormScreen extends ConsumerStatefulWidget {
   final String? transactionId;
@@ -129,15 +129,27 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
 
     if (widget.transactionId == null) {
       await dao.insertManual(
-        namaToko: _namaTokoController.text,
-        total: total,
-        tipe: _tipe,
-        tanggal: _selectedDate,
-        catatan: _catatanController.text.isEmpty ? null : _catatanController.text,
+        TransactionsCompanion(
+          id: Value(TransactionDao.newId()),
+          walletId: Value('default'),
+          categoryId: Value('default'),
+          tipe: Value(_tipe),
+          total: Value(total),
+          tanggal: Value(_selectedDate),
+          namaToko: Value(_namaTokoController.text),
+          catatan: _catatanController.text.isEmpty ? const Value.absent() : Value(_catatanController.text),
+        ),
       );
     } else {
-      // ponytail: update hanya total, perlu method updateTransaction lengkap
-      await dao.updateTotal(widget.transactionId!, total);
+      await dao.updateTransaction(
+        widget.transactionId!,
+        TransactionsCompanion(
+          total: Value(total),
+          namaToko: Value(_namaTokoController.text),
+          catatan: _catatanController.text.isEmpty ? const Value.absent() : Value(_catatanController.text),
+          tanggal: Value(_selectedDate),
+        ),
+      );
     }
 
     if (mounted) {

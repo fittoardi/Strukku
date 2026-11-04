@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../../core/utils/format.dart';
 import 'transaction_provider.dart';
 
@@ -9,11 +9,11 @@ final historyFilterProvider = StateProvider<DateTimeRange?>((ref) => null);
 final filteredTransactionsProvider = StreamProvider<List<dynamic>>((ref) {
   final dao = ref.watch(transactionDaoProvider);
   final filter = ref.watch(historyFilterProvider);
-  
+
   if (filter == null) {
-    return dao.watchTransactions(limit: 100);
+    return dao.watchRecent();
   }
-  return dao.watchTransactions(limit: 100).map((txs) {
+  return dao.watchRecent().map((txs) {
     return txs.where((t) {
       return t.tanggal.isAfter(filter.start.subtract(const Duration(days: 1))) &&
              t.tanggal.isBefore(filter.end.add(const Duration(days: 1)));
@@ -67,7 +67,7 @@ class HistoryScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final date = groupedByDate.keys.elementAt(index);
               final txs = groupedByDate[date]!;
-              final totalDay = txs.fold(0, (sum, t) => sum + (t.tipe == 'masuk' ? t.total : -t.total));
+              final totalDay = txs.fold<int>(0, (sum, t) => sum + (t.tipe == 'masuk' ? (t.total as int) : -(t.total as int)));
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
