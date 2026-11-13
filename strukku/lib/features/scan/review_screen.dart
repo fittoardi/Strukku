@@ -1,17 +1,23 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'receipt_parser.dart';
+import '../../core/db/app_database.dart';
+import '../../core/db/transaction_dao.dart';
+import '../../core/sync/sync_provider.dart';
+import '../../features/transactions/transaction_provider.dart';
 
-class ReviewScreen extends StatefulWidget {
+class ReviewScreen extends ConsumerStatefulWidget {
   const ReviewScreen({super.key, required this.receipt});
 
   final ParsedReceipt receipt;
 
   @override
-  State<ReviewScreen> createState() => _ReviewScreenState();
+  ConsumerState<ReviewScreen> createState() => _ReviewScreenState();
 }
 
-class _ReviewScreenState extends State<ReviewScreen> {
+class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   late final TextEditingController _storeCtrl;
   late final TextEditingController _tanggalCtrl;
   late final TextEditingController _catatanCtrl;
@@ -152,7 +158,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return rows;
   }
 
-  void _done() {
+  Future<void> _done() async {
     final totalText = _totalCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
     final total = totalText.isEmpty ? 0 : int.parse(totalText);
     if (total <= 0) {
@@ -160,22 +166,43 @@ class _ReviewScreenState extends State<ReviewScreen> {
       return;
     }
 
-    final items = <ParsedReceiptItem>[];
+    final dao = ref.read(transactionDaoProvider);
+    final txId = TransactionDao.newId();
+    
+    final items = <TransactionItemsCompanion>[];
     for (var i = 0; i < _itemNamaCtrl.length; i++) {
       if (_itemNamaCtrl[i].text.trim().isEmpty) continue;
-      items.add(ParsedReceiptItem(
-        nama: _itemNamaCtrl[i].text.trim(),
-        qty: int.tryParse(_itemQtyCtrl[i].text) ?? 1,
+      items.add(TransactionItemsCompanion.insert(
+        id: TransactionDao.newId(),
+        transactionId: txId,
+        namaItem: _itemNamaCtrl[i].text.trim(),
+        qty: Value(int.tryParse(_itemQtyCtrl[i].text) ?? 1),
         hargaSatuan: int.tryParse(_itemHargaCtrl[i].text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
         subtotal: int.tryParse(_itemHargaCtrl[i].text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
       ));
     }
-    context.pop(ParsedReceipt(
-      namaToko: _storeCtrl.text.trim(),
-      tanggal: widget.receipt.tanggal,
-      items: items,
-      total: total,
-    ));
+    
+    await dao.insertTransaction(
+      TransactionsCompanion.insert(
+        id: txId,
+        walletId: 'wallet-tunai',
+        categoryId: 'cat-lainnya',
+        tipe: 'keluar',
+        total: total,
+        tanggal: widget.receipt.tanggal ?? DateTime.now(),
+        namaToko: Value(_storeCtrl.text.trim()),
+        sumber: const Value('scan'),
+        confidence: Value(widget.receipt.confidence),
+      ),
+      items,
+    );
+
+    ref.read(syncControllerProvider).sync();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaksi tersimpan')));
+      context.go('/');
+    }
   }
 
   @override

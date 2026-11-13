@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/sync/sync_provider.dart';
 import '../../core/utils/format.dart';
 import '../transactions/transaction_provider.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  Widget build(BuildContext context) {
     final recentStream = ref.watch(recentTransactionsProvider);
     final transactions = recentStream.value;
 
@@ -16,6 +22,16 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('StrukKu'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              await ref.read(syncControllerProvider).sync();
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Sinkronisasi selesai')),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => context.push('/transaksi/tambah'),
@@ -41,7 +57,7 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/transaksi/tambah'),
+        onPressed: () => context.push('/scan'),
         label: const Text('Scan'),
         icon: const Icon(Icons.qr_code_scanner),
       ),

@@ -1,8 +1,9 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
 import '../../core/db/transaction_dao.dart';
+import '../../core/sync/sync_provider.dart';
 import '../../core/utils/format.dart';
 import 'transaction_provider.dart';
 
@@ -23,6 +24,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   
   DateTime _selectedDate = DateTime.now();
   String _tipe = 'keluar';
+  String? _categoryId;
+  String? _walletId;
   
   @override
   void initState() {
@@ -42,12 +45,27 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
         _catatanController.text = tx.catatan ?? '';
         _selectedDate = tx.tanggal;
         _tipe = tx.tipe;
+        _categoryId = tx.categoryId;
+        _walletId = tx.walletId;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(categoriesProvider(_tipe));
+    final walletsAsync = ref.watch(walletsProvider);
+
+    final categories = categoriesAsync.value ?? [];
+    final wallets = walletsAsync.value ?? [];
+
+    // Reset picker jika tipe berubah dan id tidak valid lagi
+    if (_categoryId != null &&
+        categories.isNotEmpty &&
+        !categories.any((c) => c.id == _categoryId)) {
+      _categoryId = null;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.transactionId == null ? 'Tambah Transaksi' : 'Ubah Transaksi'),
@@ -64,7 +82,10 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
               ],
               selected: {_tipe},
               onSelectionChanged: (Set<String> value) {
-                setState(() => _tipe = value.first);
+                setState(() {
+                  _tipe = value.first;
+                  _categoryId = null;
+                });
               },
             ),
             const SizedBox(height: 16),
@@ -86,6 +107,26 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                 if (int.tryParse(v!) == null) return 'Harus angka';
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _categoryId,
+              decoration: const InputDecoration(labelText: 'Kategori'),
+              items: categories
+                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nama)))
+                  .toList(),
+              onChanged: (v) => setState(() => _categoryId = v),
+              validator: (v) => v == null ? 'Pilih kategori' : null,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _walletId,
+              decoration: const InputDecoration(labelText: 'Dompet'),
+              items: wallets
+                  .map((w) => DropdownMenuItem(value: w.id, child: Text(w.nama)))
+                  .toList(),
+              onChanged: (v) => setState(() => _walletId = v),
+              validator: (v) => v == null ? 'Pilih dompet' : null,
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -131,8 +172,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       await dao.insertManual(
         TransactionsCompanion(
           id: Value(TransactionDao.newId()),
-          walletId: Value('default'),
-          categoryId: Value('default'),
+          walletId: Value(_walletId!),
+          categoryId: Value(_categoryId!),
           tipe: Value(_tipe),
           total: Value(total),
           tanggal: Value(_selectedDate),
@@ -144,6 +185,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       await dao.updateTransaction(
         widget.transactionId!,
         TransactionsCompanion(
+          walletId: Value(_walletId!),
+          categoryId: Value(_categoryId!),
           total: Value(total),
           namaToko: Value(_namaTokoController.text),
           catatan: _catatanController.text.isEmpty ? const Value.absent() : Value(_catatanController.text),
@@ -151,6 +194,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
         ),
       );
     }
+
+    // Pemicu sync background
+    ref.read(syncControllerProvider).sync();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

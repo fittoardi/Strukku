@@ -105,4 +105,22 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
   Future<void> insertManual(TransactionsCompanion entry) async {
     await into(transactions).insert(entry);
   }
+
+  /// Transaksi aktif yang belum disinkronkan (syncedAt null).
+  Future<List<Transaction>> getUnsynced() {
+    return (select(transactions)
+          ..where((t) =>
+              t.deletedAt.isNull() & t.syncedAt.isNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.tanggal)]))
+        .get();
+  }
+
+  /// Tandai transaksi sebagai sudah sinkron.
+  Future<void> markSynced(String id) async {
+    await (update(transactions)..where((t) => t.id.equals(id))).write(
+      TransactionsCompanion(
+        syncedAt: Value(DateTime.now()),
+      ),
+    );
+  }
 }

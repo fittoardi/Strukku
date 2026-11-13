@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../scan/receipt_parser.dart';
 import '../scan/scan_provider.dart';
+import '../../core/network/network_provider.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
@@ -63,7 +63,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   Future<void> _process(String path) async {
     final ocr = await ref.read(ocrServiceProvider).recognize(path);
     ref.read(scanTextProvider.notifier).state = ocr;
-    final parsed = ReceiptParser.parse(ocr);
+    final parsed = await ref.read(backendServiceProvider).parseReceipt(ocr);
     if (!mounted) return;
     await context.push('/scan/review', extra: parsed);
   }
