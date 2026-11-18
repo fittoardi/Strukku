@@ -60,7 +60,7 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
-  /// Total per kategori untuk transaksi keluar aktif di rentang tanggal.
+  /// Total pengeluaran per kategori aktif di rentang tanggal.
   Future<Map<String, int>> totalPerKategori(
       DateTime start, DateTime end) async {
     final query = select(transactions).join([

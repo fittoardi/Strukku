@@ -9,20 +9,21 @@ class BackendService {
 
   Future<ParsedReceipt> parseReceipt(String ocrText) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/parse-receipt'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'ocr_text': ocrText}),
-      ).timeout(const Duration(seconds: 25));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/parse-receipt'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'ocr_text': ocrText}),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return _mapToParsedReceipt(data);
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
       }
+      throw Exception('Server error: ${response.statusCode}');
     } catch (e) {
-      // Fallback ke parser lokal jika gagal
+      // Fallback lokal jika backend timeout atau offline
       return ReceiptParser.parse(ocrText);
     }
   }

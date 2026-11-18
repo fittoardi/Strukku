@@ -142,17 +142,28 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   List<Widget> _buildItemRows() {
     final rows = <Widget>[];
     for (var i = 0; i < _itemNamaCtrl.length; i++) {
-      rows.add(Flexible(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(children: [
-            Expanded(child: TextField(controller: _itemNamaCtrl[i], decoration: const InputDecoration(hintText: 'Nama item'))),
-            const SizedBox(width: 4),
-            Expanded(child: TextField(controller: _itemQtyCtrl[i], keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'Qty', isDense: true))),
-            const SizedBox(width: 4),
-            Expanded(child: TextField(controller: _itemHargaCtrl[i], keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: 'Rp '))),
-          ]),
-        ),
+      rows.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(children: [
+          Expanded(
+              flex: 3,
+              child: TextField(
+                  controller: _itemNamaCtrl[i],
+                  decoration: const InputDecoration(hintText: 'Nama item'))),
+          const SizedBox(width: 4),
+          Expanded(
+              child: TextField(
+                  controller: _itemQtyCtrl[i],
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: 'Qty', isDense: true))),
+          const SizedBox(width: 4),
+          Expanded(
+              flex: 2,
+              child: TextField(
+                  controller: _itemHargaCtrl[i],
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(prefixText: 'Rp '))),
+        ]),
       ));
     }
     return rows;
