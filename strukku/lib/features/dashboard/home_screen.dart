@@ -1,11 +1,7 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/sync/sync_provider.dart';
-import '../../core/utils/format.dart';
-import '../transactions/transaction_provider.dart';
-import 'dashboard_provider.dart';
+import '../../core/db/transaction_dao.dart';
+import 'transaction_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -15,6 +11,16 @@ class HomeScreen extends ConsumerWidget {
     final transactions = ref.watch(recentTransactionsProvider).value ?? [];
     final totals = ref.watch(monthlyCategoryTotalsProvider).value ?? {};
     final dailyTrends = ref.watch(dailyTrendProvider).value ?? {};
+    final totalsMasuk = <String, int>{};
+    final totalsKeluar = <String, int>{};
+    for (final t in transactions) {
+      if (t.tipe == 'masuk') {
+        totalsMasuk[t.categoryId ?? ''] = (totalsMasuk[t.categoryId ?? ''] ?? 0) + t.total;
+      } else {
+        totalsKeluar[t.categoryId ?? ''] = (totalsKeluar[t.categoryId ?? ''] ?? 0) + t.total;
+      }
+    }
+    final net = totalsMasuk.values.fold(0, (a, b) => a + b) - totalsKeluar.values.fold(0, (a, b) => a + b);
     return Scaffold(
       appBar: AppBar(title: const Text('StrukKu'), actions: [
         IconButton(icon: const Icon(Icons.account_balance_wallet_outlined), onPressed: () => context.push('/budget')),
@@ -27,7 +33,17 @@ class HomeScreen extends ConsumerWidget {
         IconButton(icon: const Icon(Icons.add), onPressed: () => context.push('/transaksi/tambah')),
       ]),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        _SummaryCard(transactions),
+        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
+          _row('Hari ini (keluar)', totalsKeluar.values.where((v) => v > 0).fold(0, (a, b) => a + b)),
+          const Divider(height: 1),
+          _row('Minggu ini (keluar)', totalsKeluar.values.where((v) => v > 0).fold(0, (a, b) => a + b)),
+          const Divider(height: 1),
+          _row('Bulan ini (keluar)', totalsKeluar.values.where((v) => v > 0).fold(0, (a, b) => a + b)),
+          const Divider(height: 1),
+          _row('Pemasukan (masuk)', totalsMasuk.values.fold(0, (a, b) => a + b)),
+          const Divider(height: 1),
+          _row('Saldo bersih', net),
+        ])))),
         const SizedBox(height: 16),
         if (totals.isNotEmpty) ...[
           const Text('Pengeluaran per kategori', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -101,17 +117,11 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    int sum(bool Function(dynamic) test) => transactions.where(test).fold(0, (s, t) => s + t.total as int);
-    final today = sum((t) => t.tanggal.year == now.year && t.tanggal.month == now.month && t.tanggal.day == now.day);
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
-    final weekStartDate = DateTime(weekStart.year, weekStart.month, weekStart.day);
-    final week = sum((t) => !t.tanggal.isBefore(weekStartDate));
-    final month = sum((t) => t.tanggal.year == now.year && t.tanggal.month == now.month);
-    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-      _value('Hari ini', today), _value('Minggu ini', week), _value('Bulan ini', month),
-    ])));
+    return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('Rangkuman'));
   }
-
-  Widget _value(String label, int value) => Column(children: [Text(label), const SizedBox(height: 4), Text(formatRupiah(value), style: const TextStyle(fontWeight: FontWeight.bold))]);
 }
+
+Widget _row(String label, int value) => Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [Text(label), Text(formatRupiah(value))],
+];

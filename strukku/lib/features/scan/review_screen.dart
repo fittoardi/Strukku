@@ -202,6 +202,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         total: total,
         tanggal: widget.receipt.tanggal ?? DateTime.now(),
         namaToko: Value(_storeCtrl.text.trim()),
+        catatan: Value(_catatanCtrl.text.trim().isEmpty ? null : _catatanCtrl.text.trim()),
         sumber: const Value('scan'),
         confidence: Value(widget.receipt.confidence),
       ),
