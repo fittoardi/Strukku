@@ -26,7 +26,7 @@ class PostgresConfig {
   /// - HP Fisik di Wi-Fi lokal -> ganti dengan IP laptop Anda (misal 192.168.1.19)
   factory PostgresConfig.defaultLocal({
     String? customHost,
-    String password = 'postgres',
+    String password = 'admin',
     String username = 'postgres',
     String database = 'strukku',
   }) {
@@ -172,9 +172,9 @@ class PostgresService {
 
 /// Provider konfigurasi database PostgreSQL
 final postgresConfigProvider = StateProvider<PostgresConfig>((ref) {
-  // Ubah password sesuai password akun postgres di komputer Anda
+  // Password akun postgres lokal
   return PostgresConfig.defaultLocal(
-    password: 'postgres', // default password postgres lokal Anda
+    password: 'admin',
   );
 });
 
