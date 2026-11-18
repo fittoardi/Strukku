@@ -42,6 +42,7 @@ class BackendService {
       pajak: json['pajak'] ?? 0,
       diskon: json['diskon'] ?? 0,
       total: json['total'] ?? 0,
+      kategoriSaran: json['kategori_saran'],
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
       catatanParser: json['catatan_parser'],
     );

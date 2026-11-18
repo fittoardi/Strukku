@@ -21,6 +21,7 @@ class ParsedReceipt {
     this.pajak = 0,
     this.diskon = 0,
     this.total = 0,
+    this.kategoriSaran,
     this.confidence = 0,
     this.catatanParser,
   });
@@ -32,6 +33,7 @@ class ParsedReceipt {
   final int pajak;
   final int diskon;
   final int total;
+  final String? kategoriSaran;
   final double confidence;
   final String? catatanParser;
 

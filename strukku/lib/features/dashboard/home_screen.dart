@@ -156,9 +156,18 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
           ],
-          const Text(
-            '5 Transaksi Terakhir',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '5 Transaksi Terakhir',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              TextButton(
+                onPressed: () => context.push('/riwayat'),
+                child: const Text('Lihat Semua'),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           if (transactions.isEmpty)

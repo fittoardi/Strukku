@@ -143,4 +143,38 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
       ),
     );
   }
+
+  /// Ambil categoryId dari aturan toko sebelumnya (merchant rules).
+  Future<String?> getCategoryByMerchant(String storeName) async {
+    final normalized = storeName.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    final rule = await (db.select(db.merchantRules)
+          ..where((r) => r.namaTokoNormalized.equals(normalized)))
+        .getSingleOrNull();
+    return rule?.categoryId;
+  }
+
+  /// Simpan atau perbarui aturan toko -> kategori.
+  Future<void> saveMerchantRule(String storeName, String categoryId) async {
+    final normalized = storeName.trim().toLowerCase();
+    if (normalized.isEmpty) return;
+
+    final existing = await (db.select(db.merchantRules)
+          ..where((r) => r.namaTokoNormalized.equals(normalized)))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      await (db.update(db.merchantRules)
+            ..where((r) => r.id.equals(existing.id)))
+          .write(MerchantRulesCompanion(
+            categoryId: Value(categoryId),
+          ));
+    } else {
+      await db.into(db.merchantRules).insert(MerchantRulesCompanion.insert(
+        id: newId(),
+        namaTokoNormalized: normalized,
+        categoryId: categoryId,
+      ));
+    }
+  }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/sync/sync_provider.dart';
 import '../../core/utils/format.dart';
 import 'transaction_provider.dart';
 
@@ -31,7 +33,7 @@ class HistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Riwayat'),
+        title: const Text('Riwayat Transaksi'),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -67,7 +69,10 @@ class HistoryScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final date = groupedByDate.keys.elementAt(index);
               final txs = groupedByDate[date]!;
-              final totalDay = txs.fold<int>(0, (sum, t) => sum + (t.tipe == 'masuk' ? (t.total as int) : -(t.total as int)));
+              final totalDay = txs.fold<int>(
+                0,
+                (sum, t) => sum + (t.tipe == 'masuk' ? (t.total as int) : -(t.total as int)),
+              );
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,19 +110,60 @@ class HistoryScreen extends ConsumerWidget {
 
   Widget _buildTransactionItem(BuildContext context, WidgetRef ref, dynamic t) {
     final isIncome = t.tipe == 'masuk';
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(t.namaToko ?? '-'),
-        subtitle: Text(t.catatan ?? '-'),
-        trailing: Text(
-          '${isIncome ? '+' : '-'}${formatRupiah(t.total)}',
-          style: TextStyle(
-            color: isIncome ? Colors.green : Colors.red,
-            fontWeight: FontWeight.bold,
-          ),
+    return Dismissible(
+      key: Key(t.id.toString()),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red.shade400,
+          borderRadius: BorderRadius.circular(12),
         ),
-        onTap: () => Navigator.pushNamed(context, '/transaksi/ubah/${t.id}'),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Hapus Transaksi'),
+            content: const Text('Yakin ingin menghapus transaksi ini?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Hapus'),
+              ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (_) async {
+        await ref.read(transactionControllerProvider).softDelete(t.id);
+        ref.read(syncControllerProvider).sync();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Transaksi berhasil dihapus')),
+          );
+        }
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          title: Text(t.namaToko ?? '-'),
+          subtitle: Text(t.catatan ?? '-'),
+          trailing: Text(
+            '${isIncome ? '+' : '-'}${formatRupiah(t.total)}',
+            style: TextStyle(
+              color: isIncome ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          onTap: () => context.push('/transaksi/ubah/${t.id}'),
+        ),
       ),
     );
   }
