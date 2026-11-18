@@ -76,6 +76,15 @@ class SyncService {
                 DateTime.tryParse(raw['updated_at']?.toString() ?? '') ?? DateTime.now()),
           ));
         } else {
+          // Last-write-wins berdasarkan updated_at
+          final String remoteUpdatedAt = raw['updated_at']?.toString() ?? '';
+          final localUpdatedAt = exists.updatedAt;
+          if (remoteUpdatedAt.isNotEmpty) {
+            final String localIso = localUpdatedAt.toIso8601String();
+            if (remoteUpdatedAt.compareTo(localIso) <= 0) {
+              continue;
+            }
+          }
           await (db.update(db.transactions)
                 ..where((t) => t.id.equals(id)))
               .write(TransactionsCompanion(
