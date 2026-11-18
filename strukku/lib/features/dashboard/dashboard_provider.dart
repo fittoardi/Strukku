@@ -9,3 +9,11 @@ final monthlyCategoryTotalsProvider = FutureProvider<Map<String, int>>((ref) {
     DateTime(now.year, now.month + 1, 0, 23, 59, 59),
   );
 });
+
+final dailyTrendProvider = FutureProvider<Map<String, int>>((ref) {
+  final now = DateTime.now();
+  return TransactionDao(ref.watch(databaseProvider)).totalPerHari(
+    DateTime(now.year, now.month, 1),
+    DateTime(now.year, now.month + 1, 0, 23, 59, 59),
+  );
+});

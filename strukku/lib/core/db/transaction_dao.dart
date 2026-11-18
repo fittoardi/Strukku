@@ -82,6 +82,26 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
     return result;
   }
 
+  /// Total pengeluaran per tanggal aktif di rentang tanggal (key: yyyy-MM-dd).
+  Future<Map<String, int>> totalPerHari(DateTime start, DateTime end) async {
+    final rows = await (select(transactions)..where(
+          transactions.deletedAt.isNull() &
+              transactions.tipe.equals('keluar') &
+              transactions.tanggal.isBiggerOrEqualValue(start) &
+              transactions.tanggal.isSmallerOrEqualValue(end),
+        )
+        ..orderBy([(t) => OrderingTerm.asc(t.tanggal)]))
+        .get();
+    final result = <String, int>{};
+    for (final row in rows) {
+      final txn = row.readTable(transactions);
+      final key =
+          '${txn.tanggal.year}-${txn.tanggal.month.toString().padLeft(2, '0')}-${txn.tanggal.day.toString().padLeft(2, '0')}';
+      result[key] = (result[key] ?? 0) + txn.total;
+    }
+    return result;
+  }
+
   /// Items untuk suatu transaksi.
   Future<List<TransactionItem>> getItems(String transactionId) {
     return (select(transactionItems)

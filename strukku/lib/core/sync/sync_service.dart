@@ -19,7 +19,7 @@ class SyncService {
   Future<void> pull() async {
     final response = await http
         .get(Uri.parse('$baseUrl/api/transactions'))
-        .timeout(const Duration(seconds: 25));
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode != 200) return;
 
@@ -144,7 +144,7 @@ class SyncService {
           Uri.parse('$baseUrl/api/transactions'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(body),
-        ).timeout(const Duration(seconds: 25));
+        ).timeout(const Duration(seconds: 15));
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           await dao.markSynced(tx.id);
