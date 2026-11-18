@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import '../features/dashboard/home_screen.dart';
+import '../features/budget/budget_screen.dart';
 import '../features/scan/receipt_parser.dart';
 import '../features/scan/review_screen.dart';
 import '../features/scan/scanner_screen.dart';
@@ -12,6 +13,10 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/budget',
+      builder: (context, state) => const BudgetScreen(),
     ),
     GoRoute(
       path: '/transaksi/tambah',
