@@ -9,24 +9,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:strukku/main.dart';
-import 'package:strukku/core/db/app_database.dart';
-import 'package:strukku/core/db/database_provider.dart';
+import 'package:strukku/features/dashboard/dashboard_provider.dart';
 import 'package:strukku/features/transactions/transaction_provider.dart';
+import 'package:strukku/core/db/app_database.dart';
 
 void main() {
   testWidgets('StrukkuApp smoke test', (WidgetTester tester) async {
-    final testDatabase = AppDatabase();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          databaseProvider.overrideWithValue(testDatabase),
           recentTransactionsProvider.overrideWithValue(AsyncValue.data(<Transaction>[])),
+          monthlyCategoryTotalsProvider.overrideWithValue(
+            const AsyncValue.data(<String, int>{}),
+          ),
+          dailyTrendProvider.overrideWithValue(
+            const AsyncValue.data(<String, int>{}),
+          ),
         ],
-        child: MaterialApp(home: StrukkuApp()),
+        child: const MaterialApp(home: StrukkuApp()),
       ),
     );
 
     expect(find.text('StrukKu'), findsOneWidget);
-    addTearDown(testDatabase.close);
   });
 }

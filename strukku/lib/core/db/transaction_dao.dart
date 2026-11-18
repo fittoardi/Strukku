@@ -84,17 +84,17 @@ class TransactionDao extends DatabaseAccessor<AppDatabase>
 
   /// Total pengeluaran per tanggal aktif di rentang tanggal (key: yyyy-MM-dd).
   Future<Map<String, int>> totalPerHari(DateTime start, DateTime end) async {
-    final rows = await (select(transactions)..where(
-          transactions.deletedAt.isNull() &
-              transactions.tipe.equals('keluar') &
-              transactions.tanggal.isBiggerOrEqualValue(start) &
-              transactions.tanggal.isSmallerOrEqualValue(end),
-        )
-        ..orderBy([(t) => OrderingTerm.asc(t.tanggal)]))
-        .get();
+    final query = select(transactions)
+      ..where((t) =>
+          t.deletedAt.isNull() &
+          t.tipe.equals('keluar') &
+          t.tanggal.isBiggerOrEqualValue(start) &
+          t.tanggal.isSmallerOrEqualValue(end))
+      ..orderBy([(t) => OrderingTerm.asc(t.tanggal)]);
+
+    final rows = await query.get();
     final result = <String, int>{};
-    for (final row in rows) {
-      final txn = row.readTable(transactions);
+    for (final txn in rows) {
       final key =
           '${txn.tanggal.year}-${txn.tanggal.month.toString().padLeft(2, '0')}-${txn.tanggal.day.toString().padLeft(2, '0')}';
       result[key] = (result[key] ?? 0) + txn.total;
